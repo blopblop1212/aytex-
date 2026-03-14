@@ -314,9 +314,9 @@ tbody td{padding:11px 14px;vertical-align:middle}
       <div style="font-size:11px;color:#5e6a84;letter-spacing:2px;text-transform:uppercase;margin-top:4px">Vinted Tracker · Acces prive</div>
     </div>
     <div style="background:#161b27;border:1px solid #252c3f;border-radius:20px;padding:32px">
-      <div style="margin-bottom:14px"><label style="font-size:10px;letter-spacing:1.5px;color:#5e6a84;text-transform:uppercase;font-weight:600;margin-bottom:6px;display:block">Mot de passe</label><input id="login-pass" type="password" placeholder="Votre mot de passe..." style="width:100%;background:#12151e;border:1px solid #252c3f;border-radius:8px;padding:12px 14px;color:#f0f2f8;font-family:Outfit,sans-serif;font-size:14px;outline:none" /></div>
+      <div style="margin-bottom:14px"><label style="font-size:10px;letter-spacing:1.5px;color:#5e6a84;text-transform:uppercase;font-weight:600;margin-bottom:6px;display:block">Mot de passe</label><input id="login-pass" type="password" placeholder="Votre mot de passe..." onkeydown="if(event.key==='Enter')doLogin()" style="width:100%;background:#12151e;border:1px solid #252c3f;border-radius:8px;padding:12px 14px;color:#f0f2f8;font-family:Outfit,sans-serif;font-size:14px;outline:none" /></div>
       <div id="login-err" style="color:#ff5757;font-size:12px;margin-bottom:10px;display:none;text-align:center">Mot de passe incorrect</div>
-      <button id="login-btn" style="width:100%;background:#e8c547;color:#080a0f;border:none;border-radius:10px;padding:13px;font-family:Outfit,sans-serif;font-weight:700;font-size:14px;cursor:pointer">SE CONNECTER</button>
+      <button id="login-btn" onclick="doLogin()" style="width:100%;background:#e8c547;color:#080a0f;border:none;border-radius:10px;padding:13px;font-family:Outfit,sans-serif;font-weight:700;font-size:14px;cursor:pointer">SE CONNECTER</button>
     </div>
   </div>
 </div>
@@ -372,7 +372,7 @@ async function sbFetch(path, opts){
 }
 
 async function dbGetVentes(){ return sbFetch('ventes?order=created_at.desc'); }
-async function async function dbGetAchatsNoop(){ return sbFetch('achats?order=created_at.desc'); }
+// achats disabled
 
 async function dbInsertVente(v){
   return sbFetch('ventes', {method:'POST', body:JSON.stringify(v)});
@@ -487,12 +487,11 @@ function getCatData(){
 //  RENDER
 // ══════════════════════════════════════════
 function renderBadges(){
-  document.getElementById('badge-ventes').textContent = ventes.length;
-
   var s = computeStats();
-  var el = document.getElementById('sidebar-profit');
-  el.textContent = eur(s.benef);
-  el.style.color = s.benef>=0?'var(--green)':'var(--red)';
+  var bv = document.getElementById('badge-ventes');
+  if(bv) bv.textContent = ventes.length;
+  var sp = document.getElementById('sidebar-profit');
+  if(sp){ sp.textContent = eur(s.benef); sp.style.color = s.benef>=0?'var(--green)':'var(--red)'; }
 }
 
 function setPage(p){
@@ -919,7 +918,7 @@ function checkLogin(){
 }
 
 function doLogin(){
-  var val = document.getElementById('login-pass').value;
+  var val = document.getElementById('login-pass').value.trim();
   if(val === PASSWORD){
     try {
       var expire30days = Date.now() + (30 * 24 * 60 * 60 * 1000);
@@ -928,18 +927,16 @@ function doLogin(){
     } catch(e){}
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('login-err').style.display = 'none';
-    init();
+    try { init(); } catch(e){ console.error('init error:', e); }
   } else {
     document.getElementById('login-err').style.display = 'block';
+    document.getElementById('login-err').textContent = 'Mot de passe incorrect ❌';
     document.getElementById('login-pass').style.borderColor = '#ff5757';
     setTimeout(function(){ document.getElementById('login-pass').style.borderColor = '#252c3f'; }, 1500);
   }
 }
 
-document.getElementById('login-btn').addEventListener('click', doLogin);
-document.getElementById('login-pass').addEventListener('keydown', function(e){
-  if(e.key === 'Enter') doLogin();
-});
+// login handled via onclick
 
 checkLogin();
 
