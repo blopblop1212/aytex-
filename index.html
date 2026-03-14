@@ -719,7 +719,6 @@ async function saveVente(){
   var achat = parseFloat(document.getElementById('mv-achat').value)||0;
   var revente = parseFloat(document.getElementById('mv-revente').value)||0;
   if(!hash){ toast('⚠️ Ajoute un hashtag !','err'); return; }
-  if(!revente){ toast('⚠️ Ajoute un prix de revente !','err'); return; }
   var obj = { hash:hash, achat:achat, revente:revente,
     cat:document.getElementById('mv-cat').value,
     date:document.getElementById('mv-date').value,
@@ -795,7 +794,6 @@ async function saveAchat(){
   var hash = document.getElementById('ma-hash').value.trim();
   var prix = parseFloat(document.getElementById('ma-prix').value)||0;
   if(!hash){ toast('⚠️ Ajoute un hashtag !','err'); return; }
-  if(!prix){ toast('⚠️ Ajoute un prix !','err'); return; }
   var obj = { hash:hash, prix:prix,
     cat:document.getElementById('ma-cat').value,
     platform:document.getElementById('ma-platform').value,
