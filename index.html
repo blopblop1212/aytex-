@@ -331,6 +331,10 @@ async function init(){
     var results = await Promise.all([dbGetVentes(), dbGetAchats()]);
     ventes = results[0] || [];
     achats = results[1] || [];
+    // Auto-import historique si base vide
+    if(ventes.length === 0){
+      await importHistorique();
+    }
     setDbStatus('online');
     render();
   } catch(e) {
@@ -902,6 +906,38 @@ document.getElementById('login-pass').addEventListener('keydown', function(e){
 });
 
 checkLogin();
+
+// DATA HISTORIQUE
+var HISTORIQUE = [
+  {hash:'#Torssader-Noir-RL',achat:22,revente:49,cat:'Vetements',date:'2024-01-01',statut:'vendu'},
+  {hash:'#Torssader-NB-Veste-Artecryx',achat:89,revente:197,cat:'Vetements',date:'2024-01-02',statut:'vendu'},
+  {hash:'#Phenom-Elite-Longchamps-Zadig',achat:0,revente:0,cat:'Accessoires',date:'2024-01-03',statut:'en cours'},
+  {hash:'#Torssader-Veste-Pull-Lacoste',achat:140,revente:230,cat:'Vetements',date:'2024-01-04',statut:'vendu'},
+  {hash:'#Torssader-Temu-Blanc',achat:0,revente:25,cat:'Vetements',date:'2024-01-05',statut:'vendu'},
+  {hash:'#Ensemble-Aliexpress',achat:14,revente:35,cat:'Vetements',date:'2024-01-06',statut:'vendu'},
+  {hash:'#Haut-Rose-Temu',achat:7,revente:18.5,cat:'Vetements',date:'2024-01-07',statut:'vendu'},
+  {hash:'#Torsadee-Temu-Blanc-1',achat:10.47,revente:25,cat:'Vetements',date:'2024-01-08',statut:'vendu'},
+  {hash:'#Torsadee-Temu-Blanc-2',achat:12.41,revente:0,cat:'Vetements',date:'2024-01-09',statut:'en cours'},
+  {hash:'#Torssadder-Temu-Beige-Girlande',achat:7.59,revente:0,cat:'Vetements',date:'2024-01-10',statut:'en cours'},
+  {hash:'#Torssader-Vert-Chelou-Temu',achat:7.31,revente:0,cat:'Vetements',date:'2024-01-11',statut:'en cours'},
+  {hash:'#Ensemble-Shein-1',achat:27.39,revente:45,cat:'Vetements',date:'2024-01-12',statut:'vendu'},
+  {hash:'#Ensemble-Shein-2',achat:27.49,revente:54.99,cat:'Vetements',date:'2024-01-13',statut:'vendu'},
+  {hash:'#Shein-3-Ensemble',achat:44.83,revente:116,cat:'Vetements',date:'2024-01-14',statut:'vendu'},
+  {hash:'#SHEIN-Achat-1',achat:27.49,revente:0,cat:'Vetements',date:'2024-01-15',statut:'en cours'},
+  {hash:'#SHEIN-Achat-2',achat:27.39,revente:0,cat:'Vetements',date:'2024-01-16',statut:'en cours'},
+  {hash:'#Shein-5-Ensemble',achat:64.19,revente:204.96,cat:'Vetements',date:'2024-01-17',statut:'vendu'}
+];
+
+async function importHistorique(){
+  var ok=0;
+  for(var i=0;i<HISTORIQUE.length;i++){
+    var item = Object.assign({id:uid()}, HISTORIQUE[i]);
+    try{ await dbInsertVente(item); ok++; } catch(e){ console.log(e); }
+  }
+  ventes = await dbGetVentes();
+  if(ok>0) toast('✅ '+ok+' ventes chargées !','ok');
+}
+
 </script>
 </body>
 </html>
