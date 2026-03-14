@@ -262,8 +262,8 @@ tbody td{padding:11px 14px;vertical-align:middle}
     <nav class="nav">
       <div class="nav-section">Menu</div>
       <div class="nav-item active" id="nav-overview"><div class="nav-icon">◈</div><span class="nav-label">Dashboard</span></div>
-      <div class="nav-item" id="nav-ventes"><div class="nav-icon">↑</div><span class="nav-label">Mes Ventes</span><span class="nav-badge" id="badge-ventes">0</span></div>
-      <div class="nav-item" id="nav-achats"><div class="nav-icon">↓</div><span class="nav-label">Mes Achats</span><span class="nav-badge" id="badge-achats">0</span></div>
+      <div class="nav-item" id="nav-ventes"><div class="nav-icon">↑</div><span class="nav-label">Achat / Vente</span><span class="nav-badge" id="badge-ventes">0</span></div>
+
       <div class="nav-item" id="nav-analytics"><div class="nav-icon">∿</div><span class="nav-label">Analytiques</span></div>
     </nav>
     <div class="sidebar-bottom">
@@ -299,11 +299,7 @@ tbody td{padding:11px 14px;vertical-align:middle}
     <span class="mob-btn-label">Ventes</span>
     <span class="mob-badge" id="mob-badge-ventes">0</span>
   </button>
-  <button class="mob-btn" id="mob-nav-achats">
-    <span class="mob-btn-icon">↓</span>
-    <span class="mob-btn-label">Achats</span>
-    <span class="mob-badge" id="mob-badge-achats">0</span>
-  </button>
+
   <button class="mob-btn" id="mob-nav-analytics">
     <span class="mob-btn-icon">∿</span>
     <span class="mob-btn-label">Stats</span>
@@ -351,27 +347,6 @@ tbody td{padding:11px 14px;vertical-align:middle}
   </div>
 </div>
 
-<!-- MODAL ACHAT -->
-<div id="modal-achat" style="display:none" class="overlay">
-  <div class="modal">
-    <div class="modal-title" id="ma-title">NOUVEL ACHAT</div>
-    <div class="form-group"><label class="form-label"># Hashtag / Référence</label><input class="form-input" id="ma-hash" placeholder="ex: #Levi-501..."/></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Prix payé (€)</label><input class="form-input" id="ma-prix" type="number" step="0.01" placeholder="0.00"/></div>
-      <div class="form-group"><label class="form-label">Catégorie</label>
-        <select class="form-input" id="ma-cat"><option>Vêtements</option><option>Chaussures</option><option>Accessoires</option><option>Électronique</option><option>Maison</option><option>Livres</option><option>Sport</option><option>Autre</option></select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Plateforme</label>
-        <select class="form-input" id="ma-platform"><option>Vinted</option><option>Leboncoin</option><option>eBay</option><option>Vestiaire</option><option>Depop</option><option>Autre</option></select>
-      </div>
-      <div class="form-group"><label class="form-label">Date</label><input class="form-input" id="ma-date" type="date"/></div>
-    </div>
-    <div class="modal-btns"><button class="btn-cancel" id="ma-cancel">Annuler</button><button class="btn-save" id="ma-save">Enregistrer</button></div>
-  </div>
-</div>
-
 <script>
 // ══════════════════════════════════════════
 //  SUPABASE CONFIG
@@ -397,7 +372,7 @@ async function sbFetch(path, opts){
 }
 
 async function dbGetVentes(){ return sbFetch('ventes?order=created_at.desc'); }
-async function dbGetAchats(){ return sbFetch('achats?order=created_at.desc'); }
+async function async function dbGetAchatsNoop(){ return sbFetch('achats?order=created_at.desc'); }
 
 async function dbInsertVente(v){
   return sbFetch('ventes', {method:'POST', body:JSON.stringify(v)});
@@ -447,9 +422,8 @@ async function init(){
   setDbStatus('loading');
   document.getElementById('main-content').innerHTML = '<div class="loading">Connexion à la base de données</div>';
   try {
-    var results = await Promise.all([dbGetVentes(), dbGetAchats()]);
+    var results = await Promise.all([dbGetVentes()]);
     ventes = results[0] || [];
-    achats = results[1] || [];
     // Auto-import historique si base vide
     if(ventes.length === 0){
       await importHistorique();
@@ -514,7 +488,7 @@ function getCatData(){
 // ══════════════════════════════════════════
 function renderBadges(){
   document.getElementById('badge-ventes').textContent = ventes.length;
-  document.getElementById('badge-achats').textContent = achats.length;
+
   var s = computeStats();
   var el = document.getElementById('sidebar-profit');
   el.textContent = eur(s.benef);
@@ -523,7 +497,7 @@ function renderBadges(){
 
 function setPage(p){
   currentPage=p; searchQ='';
-  ['overview','ventes','achats','analytics'].forEach(function(pg){
+  ['overview','ventes','analytics'].forEach(function(pg){
     var el=document.getElementById('nav-'+pg);
     if(el) el.classList.toggle('active', pg===p);
   });
@@ -535,7 +509,7 @@ function render(){
   var m = document.getElementById('main-content');
   if(currentPage==='overview') m.innerHTML = buildOverview();
   else if(currentPage==='ventes') m.innerHTML = buildVentes();
-  else if(currentPage==='achats') m.innerHTML = buildAchats();
+  
   else if(currentPage==='analytics') m.innerHTML = buildAnalytics();
   bindAll();
   setTimeout(doAnimations, 80);
@@ -584,7 +558,7 @@ function buildOverview(){
     +'<div class="stats-grid">'
     +sc('Chiffre d\'affaires',eur(s.ca),s.soldCount+' ventes','var(--accent)')
     +sc('Bénéfice net',eur(s.benef),'Marge '+fmt(s.margin)+'%',s.benef>=0?'var(--green)':'var(--red)')
-    +sc('Capital investi',eur(s.totalAchats+s.cost),achats.length+' achats','var(--blue)')
+    +sc('Articles en stock',eur(s.cost),s.pending+' en cours','var(--blue)')
     +'</div>'
     +'<div class="charts-row">'
     +'<div class="chart-card">'
@@ -702,40 +676,6 @@ function buildVentes(){
 }
 
 // ══════════════════════════════════════════
-//  BUILD ACHATS
-// ══════════════════════════════════════════
-function buildAchats(){
-  var total = achats.reduce(function(a,p){ return a+parseFloat(p.prix||0); }, 0);
-  var moy = achats.length?total/achats.length:0;
-  var filt = achats.filter(function(p){
-    if(searchQ&&!p.hash.toLowerCase().includes(searchQ.toLowerCase())) return false;
-    return true;
-  });
-  var rows = filt.length===0
-    ?'<tr><td colspan="6"><div class="empty"><div class="empty-icon">🛍️</div><div>Aucun achat</div></div></td></tr>'
-    :filt.map(function(p){
-      return '<tr><td><span class="hash-tag">'+p.hash+'</span></td>'
-        +'<td class="td-mono">'+p.cat+'</td>'
-        +'<td class="td-mono" style="color:var(--blue)">'+eur(p.prix)+'</td>'
-        +'<td class="td-mono">'+p.platform+'</td>'
-        +'<td class="td-mono">'+fmtD(p.date)+'</td>'
-        +'<td style="white-space:nowrap">'
-        +'<button class="row-btn" data-action="edit-achat" data-id="'+p.id+'">✏️ Modifier</button> '
-        +'<button class="row-btn del" data-action="del-achat" data-id="'+p.id+'">🗑 Supprimer</button>'
-        +'</td></tr>';
-    }).join('');
-  return '<div class="page">'
-    +'<div class="page-head"><div><div class="page-title">MES <span>ACHATS</span></div>'
-    +'<div class="page-sub">'+achats.length+' articles · '+eur(total)+' investis</div></div>'
-    +'<button class="add-btn" id="btn-add-achat">+ Nouvel achat</button></div>'
-    +'<div class="stats-grid" style="margin-bottom:16px">'+ms('Capital investi',eur(total),'var(--blue)')+ms('Nb articles',achats.length,'var(--accent)')+ms('Prix moyen',eur(moy),'#a78bfa')+'</div>'
-    +'<div class="filter-bar"><input class="search-input" id="search-achats" placeholder="🔍 Rechercher..." value="'+searchQ+'"/></div>'
-    +'<div class="table-card"><div class="table-wrap"><table>'
-    +'<thead><tr><th>Hashtag</th><th>Catégorie</th><th>Prix payé</th><th>Plateforme</th><th>Date</th><th>Actions</th></tr></thead>'
-    +'<tbody>'+rows+'</tbody></table></div></div></div>';
-}
-
-// ══════════════════════════════════════════
 //  BUILD ANALYTICS
 // ══════════════════════════════════════════
 function buildAnalytics(){
@@ -784,11 +724,11 @@ function bindAll(){
       if(t.tagName==='BUTTON'){
         var id = t.id, action = t.getAttribute('data-action'), did = t.getAttribute('data-id');
         if(id==='btn-add-vente'||id==='btn-add-vente-ov'){ openModalVente(); return; }
-        if(id==='btn-add-achat'){ openModalAchat(); return; }
+
         if(action==='edit-vente'){ doEditVente(did); return; }
         if(action==='del-vente'){ doDelVente(did); return; }
-        if(action==='edit-achat'){ doEditAchat(did); return; }
-        if(action==='del-achat'){ doDelAchat(did); return; }
+
+
         var f = t.getAttribute('data-filter');
         if(f){ filterStatus=f; render(); return; }
       }
@@ -797,8 +737,7 @@ function bindAll(){
   };
   var sv = document.getElementById('search-ventes');
   if(sv) sv.oninput = function(){ searchQ=this.value; document.getElementById('main-content').innerHTML=buildVentes(); bindAll(); };
-  var sa = document.getElementById('search-achats');
-  if(sa) sa.oninput = function(){ searchQ=this.value; document.getElementById('main-content').innerHTML=buildAchats(); bindAll(); };
+
 }
 
 // ══════════════════════════════════════════
@@ -806,7 +745,7 @@ function bindAll(){
 // ══════════════════════════════════════════
 function openModalVente(){
   editVenteId=null;
-  document.getElementById('mv-title').textContent='NOUVELLE VENTE';
+  document.getElementById('mv-title').textContent='NOUVEL ACHAT / VENTE';
   document.getElementById('mv-hash').value='';
   document.getElementById('mv-achat').value='';
   document.getElementById('mv-revente').value='';
@@ -882,69 +821,6 @@ function updatePreview(){
 }
 
 // ══════════════════════════════════════════
-//  CRUD ACHATS
-// ══════════════════════════════════════════
-function openModalAchat(){
-  editAchatId=null;
-  document.getElementById('ma-title').textContent='NOUVEL ACHAT';
-  document.getElementById('ma-hash').value='';
-  document.getElementById('ma-prix').value='';
-  document.getElementById('ma-cat').value='Vêtements';
-  document.getElementById('ma-platform').value='Vinted';
-  document.getElementById('ma-date').value=today;
-  document.getElementById('modal-achat').style.display='flex';
-  setTimeout(function(){ document.getElementById('ma-hash').focus(); },100);
-}
-
-function doEditAchat(id){
-  var p = achats.find(function(x){ return x.id===id; });
-  if(!p){ toast('❌ Introuvable','err'); return; }
-  editAchatId = id;
-  document.getElementById('ma-title').textContent="MODIFIER L'ACHAT";
-  document.getElementById('ma-hash').value=p.hash;
-  document.getElementById('ma-prix').value=p.prix;
-  document.getElementById('ma-cat').value=p.cat;
-  document.getElementById('ma-platform').value=p.platform;
-  document.getElementById('ma-date').value=p.date||today;
-  document.getElementById('modal-achat').style.display='flex';
-}
-
-async function saveAchat(){
-  var hash = document.getElementById('ma-hash').value.trim();
-  var prix = parseFloat(document.getElementById('ma-prix').value)||0;
-  if(!hash){ toast('⚠️ Ajoute un hashtag !','err'); return; }
-  var obj = { hash:hash, prix:prix,
-    cat:document.getElementById('ma-cat').value,
-    platform:document.getElementById('ma-platform').value,
-    date:document.getElementById('ma-date').value };
-  document.getElementById('modal-achat').style.display='none';
-  toast('💾 Sauvegarde...','info');
-  try {
-    if(editAchatId){
-      await dbUpdateAchat(editAchatId, obj);
-      achats = await dbGetAchats();
-      toast('✅ Achat modifié !','ok');
-    } else {
-      obj.id = uid();
-      await dbInsertAchat(obj);
-      achats = await dbGetAchats();
-      toast('✅ Achat ajouté !','ok');
-    }
-    render();
-  } catch(e){ toast('❌ Erreur : '+e.message,'err'); }
-}
-
-async function doDelAchat(id){
-  toast('🗑 Suppression...','info');
-  try {
-    await dbDeleteAchat(id);
-    achats = achats.filter(function(p){ return p.id!==id; });
-    toast('✅ Achat supprimé','ok');
-    render();
-  } catch(e){ toast('❌ Erreur : '+e.message,'err'); }
-}
-
-// ══════════════════════════════════════════
 //  TOAST
 // ══════════════════════════════════════════
 function toast(msg, type){
@@ -970,13 +846,11 @@ function updateMobileUI(){
   var mp = document.getElementById('mob-profit-el');
   var ms2 = document.getElementById('mob-status-el');
   var mb1 = document.getElementById('mob-badge-ventes');
-  var mb2 = document.getElementById('mob-badge-achats');
   if(mp){ mp.textContent=eur(s.benef); mp.style.color=s.benef>=0?'var(--green)':'var(--red)'; }
   if(ms2){ ms2.innerHTML='<span class="mob-status-dot"></span>Connecté'; }
   if(mb1) mb1.textContent=ventes.length;
-  if(mb2) mb2.textContent=achats.length;
   // Active state
-  ['overview','ventes','achats','analytics'].forEach(function(pg){
+  ['overview','ventes','analytics'].forEach(function(pg){
     var el=document.getElementById('mob-nav-'+pg);
     if(el) el.classList.toggle('active', pg===currentPage);
   });
@@ -993,14 +867,14 @@ render = function(){
 };
 
 // Mobile nav clicks
-['overview','ventes','achats','analytics'].forEach(function(pg){
+['overview','ventes','analytics'].forEach(function(pg){
   var el = document.getElementById('mob-nav-'+pg);
   if(el) el.addEventListener('click', function(){ setPage(pg); });
 });
 
 document.getElementById('nav-overview').addEventListener('click',function(){ setPage('overview'); });
 document.getElementById('nav-ventes').addEventListener('click',function(){ setPage('ventes'); });
-document.getElementById('nav-achats').addEventListener('click',function(){ setPage('achats'); });
+
 document.getElementById('nav-analytics').addEventListener('click',function(){ setPage('analytics'); });
 
 document.getElementById('mv-cancel').addEventListener('click',function(){ document.getElementById('modal-vente').style.display='none'; });
@@ -1009,9 +883,9 @@ document.getElementById('mv-achat').addEventListener('input', updatePreview);
 document.getElementById('mv-revente').addEventListener('input', updatePreview);
 document.getElementById('modal-vente').addEventListener('click',function(e){ if(e.target===this) this.style.display='none'; });
 
-document.getElementById('ma-cancel').addEventListener('click',function(){ document.getElementById('modal-achat').style.display='none'; });
-document.getElementById('ma-save').addEventListener('click', saveAchat);
-document.getElementById('modal-achat').addEventListener('click',function(e){ if(e.target===this) this.style.display='none'; });
+
+
+
 
 // ══════════════════════════════════════════
 //  PARTICLES
