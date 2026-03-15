@@ -51,7 +51,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Outfit
 .page-title{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:2px;line-height:1}
 .page-title span{color:var(--accent)}
 .page-sub{font-size:12px;color:var(--muted);margin-top:4px}
-.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
 .stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;position:relative;overflow:hidden;transition:transform 0.2s,border-color 0.2s;cursor:default}
 .stat-card:hover{transform:translateY(-2px)}
 .stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--cc,var(--accent));transform:scaleX(0);transform-origin:left;transition:transform 0.3s}
@@ -202,6 +202,7 @@ tbody td{padding:11px 14px;vertical-align:middle}
 
   /* Stats grid — 2 colonnes sur mobile */
   .stats-grid{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .stats-grid[style*="repeat(2"]{grid-template-columns:1fr 1fr}
   .stat-card{padding:14px 12px;border-radius:12px}
   .stat-val{font-size:22px}
   .stat-label{font-size:9px;margin-bottom:6px}
@@ -464,10 +465,14 @@ function computeStats(){
   var monthCost = monthSold.reduce(function(a,v){ return a+parseFloat(v.achat||0); }, 0);
   var monthBenef = monthCA - monthCost;
   var totalAchats = achats.reduce(function(a,p){ return a+parseFloat(p.prix||0); }, 0);
+  // Total achat = somme de tous les prix d'achat de toutes les ventes
+  var totalAchat = ventes.reduce(function(a,v){ return a+parseFloat(v.achat||0); }, 0);
+  var totalAchatCount = ventes.filter(function(v){ return parseFloat(v.achat||0)>0; }).length;
   return { ca:ca, cost:cost, benef:benef, totalAchats:totalAchats,
     margin:ca>0?benef/ca*100:0, roi:cost>0?benef/cost*100:0,
     soldCount:sold.length, pending:ventes.filter(function(v){ return v.statut==='en cours'; }).length,
-    monthBenef:monthBenef, monthCount:monthSold.length };
+    monthBenef:monthBenef, monthCount:monthSold.length,
+    totalAchat:totalAchat, totalAchatCount:totalAchatCount };
 }
 
 function getMonthlyData(){
@@ -565,10 +570,11 @@ function buildOverview(){
     +'<div class="page-title">MON <span>DASHBOARD</span></div>'
     +'<div class="page-sub">'+new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+'</div>'
     +'</div></div>'
-    +'<div class="stats-grid">'
-    +sc('Chiffre d\'affaires',eur(s.ca),s.soldCount+' ventes','var(--accent)')
-    +sc('Bénéfice net',eur(s.benef),'Marge '+fmt(s.margin)+'%',s.benef>=0?'var(--green)':'var(--red)')
-    +sc('Bénéfice du mois',eur(s.monthBenef),s.monthCount+' ventes ce mois',s.monthBenef>=0?'var(--green)':'var(--red)')
+    +'<div class="stats-grid" style="grid-template-columns:repeat(2,1fr)">'
+    +sc('Chiffre d\'affaires total',eur(s.ca),s.soldCount+' ventes au total','var(--accent)')
+    +sc('Bénéfice total',eur(s.benef),'Marge '+fmt(s.margin)+'%',s.benef>=0?'var(--green)':'var(--red)')
+    +sc('Bénéfice du mois',eur(s.monthBenef),s.monthCount+' ventes ce mois','#a78bfa')
+    +sc('Total achats',eur(s.totalAchat),s.totalAchatCount+' articles achetés','var(--red)')
     +'</div>'
     +'<div class="charts-row">'
     +'<div class="chart-card">'
