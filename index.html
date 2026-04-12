@@ -51,7 +51,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Outfit
 .page-title{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:2px;line-height:1}
 .page-title span{color:var(--accent)}
 .page-sub{font-size:12px;color:var(--muted);margin-top:4px}
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
 .stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;position:relative;overflow:hidden;transition:transform 0.2s,border-color 0.2s;cursor:default}
 .stat-card:hover{transform:translateY(-2px)}
 .stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--cc,var(--accent));transform:scaleX(0);transform-origin:left;transition:transform 0.3s}
@@ -579,7 +579,7 @@ function buildOverview(){
     +'<div class="page-title">MON <span>DASHBOARD</span></div>'
     +'<div class="page-sub">'+new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+'</div>'
     +'</div></div>'
-    +'<div class="stats-grid" style="grid-template-columns:repeat(2,1fr)">'
+    +'<div class="stats-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:20px">'
     +sc('Chiffre d\'affaires total',eur(s.ca),s.soldCount+' ventes au total','var(--accent)')
     +sc('Bénéfice total',eur(s.benef),'Marge '+fmt(s.margin)+'%',s.benef>=0?'var(--green)':'var(--red)')
     +sc('Bénéfice du mois',eur(s.monthBenef),s.monthCount+' ventes ce mois','#a78bfa')
@@ -761,7 +761,47 @@ function bindAll(){
     }
   };
   var sv = document.getElementById('search-ventes');
-  if(sv) sv.oninput = function(){ searchQ=this.value; document.getElementById('main-content').innerHTML=buildVentes(); bindAll(); };
+  if(sv){
+    sv.oninput = function(){
+      searchQ = this.value;
+      var cursorPos = this.selectionStart;
+      // Only rebuild table body, not whole page
+      var filt = ventes.filter(function(v){
+        if(filterStatus!=='tous'&&v.statut!==filterStatus) return false;
+        if(searchQ&&!v.hash.toLowerCase().includes(searchQ.toLowerCase())) return false;
+        return true;
+      }).sort(function(a,b){ return new Date(b.created_at||b.date)-new Date(a.created_at||a.date); });
+      var tbody = document.querySelector('#main-content tbody');
+      if(tbody){
+        if(filt.length===0){
+          tbody.innerHTML='<tr><td colspan="9"><div class="empty"><div class="empty-icon">📦</div><div>Aucune vente</div></div></td></tr>';
+        } else {
+          tbody.innerHTML = filt.map(function(v){
+            var b=parseFloat(v.revente||0)-parseFloat(v.achat||0);
+            var m=parseFloat(v.revente)>0?b/parseFloat(v.revente)*100:0;
+            var bc=b>0?'profit-pos':b<0?'profit-neg':'profit-zero';
+            return '<tr><td><span class="hash-tag">'+v.hash+'</span></td>'
+              +'<td class="td-mono">'+v.cat+'</td>'
+              +'<td class="td-mono">'+eur(v.achat)+'</td>'
+              +'<td class="td-mono" style="color:var(--accent)">'+eur(v.revente)+'</td>'
+              +'<td><span class="'+bc+'">'+(b>=0?'+':'')+eur(b)+'</span></td>'
+              +'<td class="td-mono">'+fmt(m)+'%</td>'
+              +'<td>'+statusBadge(v.statut)+'</td>'
+              +'<td class="td-mono">'+fmtD(v.created_at||v.date)+'</td>'
+              +'<td style="white-space:nowrap">'
+              +'<button class="row-btn" data-action="edit-vente" data-id="'+v.id+'">✏️ Modifier</button> '
+              +'<button class="row-btn del" data-action="del-vente" data-id="'+v.id+'">🗑 Supprimer</button>'
+              +'</td></tr>';
+          }).join('');
+          // Re-bind delete/edit buttons on new rows
+          bindAll();
+        }
+      }
+      // Keep focus and cursor
+      var inp = document.getElementById('search-ventes');
+      if(inp){ inp.focus(); inp.setSelectionRange(cursorPos,cursorPos); }
+    };
+  }
 
 }
 
